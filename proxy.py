@@ -33,6 +33,7 @@ class MlgmXyysd_Genshin_Impact_Proxy:
         "hk4e-sdk-os.mihoyo.com",
         "dispatchosglobal.yuanshen.com",
         "osusadispatch.yuanshen.com",
+        "autopatchhk.yuanshen.com",
         "account.mihoyo.com",
         "log-upload-os.mihoyo.com",
         "dispatchcntest.yuanshen.com",
