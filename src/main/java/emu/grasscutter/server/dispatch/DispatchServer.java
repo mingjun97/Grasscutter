@@ -380,7 +380,7 @@ public final class DispatchServer {
 				responseData.message = "OK";
 				responseData.data.account.uid = requestData.uid;
 				responseData.data.account.token = requestData.token;
-				// responseData.data.account.email = account.getEmail();
+				responseData.data.account.email = account.getEmail();
 
 				Grasscutter.getLogger().info(String.format("[Dispatch] Client %s logged in via token as %s",
 						req.ip(), responseData.data.account.uid));
