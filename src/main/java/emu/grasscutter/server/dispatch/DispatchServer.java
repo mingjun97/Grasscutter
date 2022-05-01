@@ -437,7 +437,7 @@ public final class DispatchServer {
 		// hk4e-sdk-os.hoyoverse.com
 		httpServer.get("/hk4e_global/mdk/agreement/api/getAgreementInfos", new DispatchHttpJsonHandler("{\"retcode\":0,\"message\":\"OK\",\"data\":{\"marketing_agreements\":[]}}"));
 		// hk4e-sdk-os.hoyoverse.com
-		httpServer.post("/hk4e_global/combo/granter/api/compareProtocolVersion", new DispatchHttpJsonHandler("{\"retcode\":0,\"message\":\"OK\",\"data\":{\"modified\":true,\"protocol\":{\"id\":0,\"app_id\":4,\"language\":\"en\",\"user_proto\":\"\",\"priv_proto\":\"\",\"major\":7,\"minimum\":0,\"create_time\":\"0\",\"teenager_proto\":\"\",\"third_proto\":\"\"}}}"));
+		httpServer.get("/hk4e_global/combo/granter/api/compareProtocolVersion", new DispatchHttpJsonHandler("{\"retcode\":0,\"message\":\"OK\",\"data\":{\"modified\":true,\"protocol\":{\"id\":0,\"app_id\":4,\"language\":\"en\",\"user_proto\":\"\",\"priv_proto\":\"\",\"major\":7,\"minimum\":0,\"create_time\":\"0\",\"teenager_proto\":\"\",\"third_proto\":\"\"}}}"));
 
 		// Game data
 		// hk4e-api-os.hoyoverse.com
@@ -478,6 +478,9 @@ public final class DispatchServer {
 		httpServer.all("/log", new ClientLogHandler());
 		// log-upload-os.mihoyo.com
 		httpServer.all("/crash/dataUpload", new ClientLogHandler());
+
+		// webstatic-sea.hoyoverse.com
+		httpServer.get("/admin/mi18n/plat_oversea/m202003048/m202003048-version.json", new DispatchHttpJsonHandler("{\"version\":51}"));
 
 		httpServer.get("/gacha", (req, res) -> res.send("<!doctype html><html lang=\"en\"><head><title>Gacha</title></head><body></body></html>"));
 
