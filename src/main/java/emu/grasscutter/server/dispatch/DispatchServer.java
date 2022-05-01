@@ -381,6 +381,9 @@ public final class DispatchServer {
 				responseData.data.account.uid = requestData.uid;
 				responseData.data.account.token = requestData.token;
 				responseData.data.account.email = account.getEmail();
+				if (responseData.data.account.email == null) { // null will trigger crash in some client
+					responseData.data.account.email = "";
+				}
 
 				Grasscutter.getLogger().info(String.format("[Dispatch] Client %s logged in via token as %s",
 						req.ip(), responseData.data.account.uid));
