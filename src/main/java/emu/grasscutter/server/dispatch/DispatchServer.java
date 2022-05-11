@@ -350,6 +350,9 @@ public final class DispatchServer {
 				responseData.data.account.uid = requestData.uid;
 				responseData.data.account.token = requestData.token;
 				responseData.data.account.email = account.getEmail();
+				if (responseData.data.account.email == null) { // null will trigger crash in some client
+					responseData.data.account.email = "";
+				}
 
 				Grasscutter.getLogger().info(translate("messages.dispatch.account.login_token_success", req.ip(), requestData.uid));
 			}
@@ -403,6 +406,7 @@ public final class DispatchServer {
 		// hk4e-sdk-os.hoyoverse.com
 		httpServer.get("/hk4e_global/mdk/agreement/api/getAgreementInfos", new DispatchHttpJsonHandler("{\"retcode\":0,\"message\":\"OK\",\"data\":{\"marketing_agreements\":[]}}"));
 		// hk4e-sdk-os.hoyoverse.com
+
 		// this could be either GET or POST based on the observation of different clients
 		httpServer.all("/hk4e_global/combo/granter/api/compareProtocolVersion", new DispatchHttpJsonHandler("{\"retcode\":0,\"message\":\"OK\",\"data\":{\"modified\":true,\"protocol\":{\"id\":0,\"app_id\":4,\"language\":\"en\",\"user_proto\":\"\",\"priv_proto\":\"\",\"major\":7,\"minimum\":0,\"create_time\":\"0\",\"teenager_proto\":\"\",\"third_proto\":\"\"}}}"));
 
@@ -436,7 +440,7 @@ public final class DispatchServer {
 		// log-upload-os.mihoyo.com
 		httpServer.all("/log/sdk/upload", new DispatchHttpJsonHandler("{\"code\":0}"));
 		httpServer.all("/sdk/upload", new DispatchHttpJsonHandler("{\"code\":0}"));
-		httpServer.post("/sdk/dataUpload", new DispatchHttpJsonHandler("{\"code\":0}"));
+		httpServer.post("/sdk/dataUpload", (req, res) -> res.send("Hello"));
 		// /perf/config/verify?device_id=xxx&platform=x&name=xxx
 		httpServer.all("/perf/config/verify", new DispatchHttpJsonHandler("{\"code\":0}"));
 
@@ -448,6 +452,7 @@ public final class DispatchServer {
 
 		// webstatic-sea.hoyoverse.com
 		httpServer.get("/admin/mi18n/plat_oversea/m202003048/m202003048-version.json", new DispatchHttpJsonHandler("{\"version\":51}"));
+
 
 		// gacha record.
 		String gachaMappingsPath = Utils.toFilePath(Grasscutter.getConfig().DATA_FOLDER + "/gacha_mappings.js");
