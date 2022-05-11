@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.gson.Gson;
 import emu.grasscutter.utils.Utils;
 import org.reflections.Reflections;
 
@@ -17,6 +18,11 @@ import emu.grasscutter.Grasscutter;
 import emu.grasscutter.data.common.PointData;
 import emu.grasscutter.data.common.ScenePointConfig;
 import emu.grasscutter.data.custom.AbilityEmbryoEntry;
+import emu.grasscutter.data.custom.AbilityModifier;
+import emu.grasscutter.data.custom.AbilityModifier.AbilityConfigData;
+import emu.grasscutter.data.custom.AbilityModifier.AbilityModifierAction;
+import emu.grasscutter.data.custom.AbilityModifier.AbilityModifierActionType;
+import emu.grasscutter.data.custom.AbilityModifierEntry;
 import emu.grasscutter.data.custom.OpenConfigEntry;
 import emu.grasscutter.data.custom.ScenePointEntry;
 import emu.grasscutter.game.world.SpawnDataEntry;
@@ -46,6 +52,7 @@ public class ResourceLoader {
 		// Load ability lists
 		loadAbilityEmbryos();
 		loadOpenConfig();
+		loadAbilityModifiers();
 		// Load resources
 		loadResources();
 		// Process into depots
@@ -120,14 +127,15 @@ public class ResourceLoader {
 	
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected static void loadFromResource(Class<?> c, String fileName, Int2ObjectMap map) throws Exception {
-		try (FileReader fileReader = new FileReader(Grasscutter.getConfig().RESOURCE_FOLDER + "ExcelBinOutput/" + fileName)) {
-			List list = Grasscutter.getGsonFactory().fromJson(fileReader, TypeToken.getParameterized(Collection.class, c).getType());
+		FileReader fileReader = new FileReader(Grasscutter.getConfig().RESOURCE_FOLDER + "ExcelBinOutput/" + fileName);
+		Gson gson = Grasscutter.getGsonFactory();
+		List list = gson.fromJson(fileReader, List.class);
 
-			for (Object o : list) {
-				GameResource res = (GameResource) o;
-				res.onLoad();
-				map.put(res.getId(), res);
-			}
+		for (Object o : list) {
+			Map<String, Object> tempMap = Utils.switchPropertiesUpperLowerCase((Map<String, Object>) o, c);
+			GameResource res = gson.fromJson(gson.toJson(tempMap), TypeToken.get(c).getType());
+			res.onLoad();
+			map.put(res.getId(), res);
 		}
 	}
 
@@ -242,6 +250,69 @@ public class ResourceLoader {
 		}
 	}
 	
+	private static void loadAbilityModifiers() {
+		// Load from BinOutput
+		File folder = new File(Utils.toFilePath(Grasscutter.getConfig().RESOURCE_FOLDER + "BinOutput/Ability/Temp/AvatarAbilities/"));
+		File[] files = folder.listFiles();
+		if (files == null) {
+			Grasscutter.getLogger().error("Error loading ability modifiers: no files found in " + folder.getAbsolutePath());
+			return;
+		}
+
+		for (File file : files) {
+			List<AbilityConfigData> abilityConfigList = null;
+			
+			try (FileReader fileReader = new FileReader(file)) {
+				abilityConfigList = Grasscutter.getGsonFactory().fromJson(fileReader, TypeToken.getParameterized(Collection.class, AbilityConfigData.class).getType());
+			} catch (Exception e) {
+				e.printStackTrace();
+				continue;
+			}
+			
+			for (AbilityConfigData data : abilityConfigList) {
+				if (data.Default.modifiers == null || data.Default.modifiers.size() == 0) {
+					continue;
+				}
+				
+				AbilityModifierEntry modifierEntry = new AbilityModifierEntry(data.Default.abilityName);
+				
+				for (Entry<String, AbilityModifier> entry : data.Default.modifiers.entrySet()) {
+					AbilityModifier modifier = entry.getValue();
+					
+					// Stare.
+					if (modifier.onAdded != null) {
+						for (AbilityModifierAction action : modifier.onAdded) {
+							if (action.$type.contains("HealHP")) {
+								action.type = AbilityModifierActionType.HealHP;
+								modifierEntry.getOnAdded().add(action);
+							}
+						}
+					}
+					
+					if (modifier.onThinkInterval != null) {
+						for (AbilityModifierAction action : modifier.onThinkInterval) {
+							if (action.$type.contains("HealHP")) {
+								action.type = AbilityModifierActionType.HealHP;
+								modifierEntry.getOnThinkInterval().add(action);
+							}
+						}
+					}
+					
+					if (modifier.onRemoved != null) {
+						for (AbilityModifierAction action : modifier.onRemoved) {
+							if (action.$type.contains("HealHP")) {
+								action.type = AbilityModifierActionType.HealHP;
+								modifierEntry.getOnRemoved().add(action);
+							}
+						}
+					}
+				}
+				
+				GameData.getAbilityModifiers().put(modifierEntry.getName(), modifierEntry);
+			}
+		}
+	}
+	
 	private static void loadSpawnData() {
 		// Read from cached file if exists
 		File spawnDataEntries = new File(Grasscutter.getConfig().DATA_FOLDER + "Spawns.json");
@@ -307,18 +378,7 @@ public class ResourceLoader {
 					}
 					
 					for (Entry<String, OpenConfigData[]> e : config.entrySet()) {
-						List<String> abilityList = new ArrayList<>();
-						int extraTalentIndex = 0;
-						
-						for (OpenConfigData entry : e.getValue()) {
-							if (entry.$type.contains("AddAbility")) {
-								abilityList.add(entry.abilityName);
-							} else if (entry.talentIndex > 0) {
-								extraTalentIndex = entry.talentIndex;
-							}
-						}
-						
-						OpenConfigEntry entry = new OpenConfigEntry(e.getKey(), abilityList, extraTalentIndex);
+						OpenConfigEntry entry = new OpenConfigEntry(e.getKey(), e.getValue());
 						map.put(entry.getName(), entry);
 					}
 				}
@@ -354,9 +414,11 @@ public class ResourceLoader {
 		public OpenConfigData[] data;
 	}
 	
-	private static class OpenConfigData {
+	public static class OpenConfigData {
 		public String $type;
 		public String abilityName;
 		public int talentIndex;
+		public int skillID;
+		public int pointDelta;
 	}
 }

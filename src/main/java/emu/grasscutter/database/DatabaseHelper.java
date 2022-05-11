@@ -3,13 +3,20 @@ package emu.grasscutter.database;
 import java.util.List;
 
 import com.mongodb.client.result.DeleteResult;
+
+import dev.morphia.query.FindOptions;
+import dev.morphia.query.Sort;
 import dev.morphia.query.experimental.filters.Filters;
 import emu.grasscutter.GameConstants;
 import emu.grasscutter.game.Account;
 import emu.grasscutter.game.avatar.Avatar;
 import emu.grasscutter.game.friends.Friendship;
+import emu.grasscutter.game.gacha.GachaRecord;
 import emu.grasscutter.game.inventory.GameItem;
+import emu.grasscutter.game.mail.Mail;
 import emu.grasscutter.game.player.Player;
+
+import static com.mongodb.client.model.Filters.eq;
 
 public final class DatabaseHelper {
 	public static Account createAccount(String username) {
@@ -78,6 +85,11 @@ public final class DatabaseHelper {
 		return DatabaseManager.getDatastore().find(Account.class).filter(Filters.eq("token", token)).first();
 	}
 
+	public static Account getAccountBySessionKey(String sessionKey) {
+		if(sessionKey == null) return null;
+		return DatabaseManager.getDatastore().find(Account.class).filter(Filters.eq("sessionKey", sessionKey)).first();
+	}
+
 	public static Account getAccountById(String uid) {
 		return DatabaseManager.getDatastore().find(Account.class).filter(Filters.eq("_id", uid)).first();
 	}
@@ -86,8 +98,31 @@ public final class DatabaseHelper {
 		return DatabaseManager.getDatastore().find(Account.class).filter(Filters.eq("playerId", playerId)).first();
 	}
 
-	public static boolean deleteAccount(String username) {
-		return DatabaseManager.getDatastore().find(Account.class).filter(Filters.eq("username", username)).delete().getDeletedCount() > 0;
+	public static void deleteAccount(Account target) {
+		// To delete an account, we need to also delete all the other documents in the database that reference the account.
+		// This should optimally be wrapped inside a transaction, to make sure an error thrown mid-way does not leave the
+		// database in an inconsistent state, but unfortunately Mongo only supports that when we have a replica set ...
+
+		// Delete Mail.class data
+		DatabaseManager.getDatabase().getCollection("mail").deleteMany(eq("ownerUid", target.getPlayerUid()));
+		// Delete Avatar.class data
+		DatabaseManager.getDatabase().getCollection("avatars").deleteMany(eq("ownerId", target.getPlayerUid()));
+		// Delete GachaRecord.class data
+		DatabaseManager.getDatabase().getCollection("gachas").deleteMany(eq("ownerId", target.getPlayerUid()));
+		// Delete GameItem.class data
+		DatabaseManager.getDatabase().getCollection("items").deleteMany(eq("ownerId", target.getPlayerUid()));
+
+		// Delete friendships.
+		// Here, we need to make sure to not only delete the deleted account's friendships,
+		// but also all friendship entries for that account's friends.
+		DatabaseManager.getDatabase().getCollection("friendships").deleteMany(eq("ownerId", target.getPlayerUid()));
+		DatabaseManager.getDatabase().getCollection("friendships").deleteMany(eq("friendId", target.getPlayerUid()));
+
+		// Delete the player.
+		DatabaseManager.getDatastore().find(Player.class).filter(Filters.eq("id", target.getPlayerUid())).delete();
+
+		// Finally, delete the account itself.
+		DatabaseManager.getDatastore().find(Account.class).filter(Filters.eq("id", target.getId())).delete();
 	}
 
 	public static List<Player> getAllPlayers() {
@@ -158,6 +193,7 @@ public final class DatabaseHelper {
 	public static List<GameItem> getInventoryItems(Player player) {
 		return DatabaseManager.getDatastore().find(GameItem.class).filter(Filters.eq("ownerId", player.getUid())).stream().toList();
 	}
+	
 	public static List<Friendship> getFriends(Player player) {
 		return DatabaseManager.getDatastore().find(Friendship.class).filter(Filters.eq("ownerId", player.getUid())).stream().toList();
 	}
@@ -181,5 +217,47 @@ public final class DatabaseHelper {
 		)).first();
 	}
 
-	public static char AWJVN = 'e';
+	public static List<GachaRecord> getGachaRecords(int ownerId, int page, int gachaType){
+		return getGachaRecords(ownerId, page, gachaType, 10);
+	}
+
+	public static List<GachaRecord> getGachaRecords(int ownerId, int page, int gachaType, int pageSize){
+		return DatabaseManager.getDatastore().find(GachaRecord.class).filter(
+			Filters.eq("ownerId", ownerId),
+			Filters.eq("gachaType", gachaType)
+		).iterator(new FindOptions()
+				.sort(Sort.descending("transactionDate"))
+				.skip(pageSize * page)
+				.limit(pageSize)
+		).toList();
+	}
+
+	public static long getGachaRecordsMaxPage(int ownerId, int page, int gachaType){
+		return getGachaRecordsMaxPage(ownerId, page, gachaType, 10);
+	}
+
+	public static long getGachaRecordsMaxPage(int ownerId, int page, int gachaType, int pageSize){
+		long count = DatabaseManager.getDatastore().find(GachaRecord.class).filter(
+			Filters.eq("ownerId", ownerId),
+			Filters.eq("gachaType", gachaType)
+		).count();
+		return count / 10 + (count % 10 > 0 ? 1 : 0 );
+	}
+
+	public static void saveGachaRecord(GachaRecord gachaRecord){
+		DatabaseManager.getDatastore().save(gachaRecord);
+	}
+	
+	public static List<Mail> getAllMail(Player player) {
+		return DatabaseManager.getDatastore().find(Mail.class).filter(Filters.eq("ownerUid", player.getUid())).stream().toList();
+	}
+	
+	public static void saveMail(Mail mail) {
+		DatabaseManager.getDatastore().save(mail);
+	}
+	
+	public static boolean deleteMail(Mail mail) {
+		DeleteResult result = DatabaseManager.getDatastore().delete(mail);
+		return result.wasAcknowledged();
+	}
 }

@@ -164,11 +164,17 @@ public class Inventory implements Iterable<GameItem> {
 			if (tab.getSize() >= tab.getMaxCapacity()) {
 				return null;
 			}
+			// Duplicates cause problems
+			item.setCount(Math.max(item.getCount(), 1));
+			// Adds to inventory
 			putItem(item, tab);
 		} else if (type == ItemType.ITEM_VIRTUAL) {
 			// Handle
 			this.addVirtualItem(item.getItemId(), item.getCount());
 			return item;
+		} else if (item.getItemData().getMaterialType() == MaterialType.MATERIAL_ADSORBATE) {
+			player.getTeamManager().addEnergyToTeam(item);
+			return null;
 		} else if (item.getItemData().getMaterialType() == MaterialType.MATERIAL_AVATAR) {
 			// Get avatar id
 			int avatarId = (item.getItemId() % 1000) + 10000000;
@@ -288,7 +294,11 @@ public class Inventory implements Iterable<GameItem> {
 			return false;
 		}
 		
-		item.setCount(item.getCount() - count);
+		if (item.getItemData().isEquip()) {
+			item.setCount(0);
+		} else {
+			item.setCount(item.getCount() - count);
+		}
 		
 		if (item.getCount() <= 0) {
 			// Remove from inventory tab too

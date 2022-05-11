@@ -9,6 +9,8 @@ import java.util.Map;
 import emu.grasscutter.Grasscutter;
 import emu.grasscutter.utils.Utils;
 import emu.grasscutter.data.custom.AbilityEmbryoEntry;
+import emu.grasscutter.data.custom.AbilityModifier;
+import emu.grasscutter.data.custom.AbilityModifierEntry;
 import emu.grasscutter.data.custom.OpenConfigEntry;
 import emu.grasscutter.data.custom.ScenePointEntry;
 import emu.grasscutter.data.def.*;
@@ -22,6 +24,7 @@ public class GameData {
 	// BinOutputs
 	private static final Int2ObjectMap<String> abilityHashes = new Int2ObjectOpenHashMap<>();
 	private static final Map<String, AbilityEmbryoEntry> abilityEmbryos = new HashMap<>();
+	private static final Map<String, AbilityModifierEntry> abilityModifiers = new HashMap<>();
 	private static final Map<String, OpenConfigEntry> openConfigEntries = new HashMap<>();
 	private static final Map<String, ScenePointEntry> scenePointEntries = new HashMap<>();
 	
@@ -66,13 +69,16 @@ public class GameData {
 	private static final Int2ObjectMap<DailyDungeonData> dailyDungeonDataMap = new Int2ObjectOpenHashMap<>();
 	private static final Int2ObjectMap<DungeonData> dungeonDataMap = new Int2ObjectOpenHashMap<>();
 	private static final Int2ObjectMap<ShopGoodsData> shopGoodsDataMap = new Int2ObjectOpenHashMap<>();
+	private static final Int2ObjectMap<CombineData> combineDataMap = new Int2ObjectOpenHashMap<>();
+	private static final Int2ObjectMap<RewardPreviewData> rewardPreviewDataMap = new Int2ObjectOpenHashMap<>();
+	private static final Int2ObjectMap<TowerFloorData> towerFloorDataMap = new Int2ObjectOpenHashMap<>();
+	private static final Int2ObjectMap<TowerLevelData> towerLevelDataMap = new Int2ObjectOpenHashMap<>();
+	private static final Int2ObjectMap<TowerScheduleData> towerScheduleDataMap = new Int2ObjectOpenHashMap<>();
 
 	// Cache
 	private static Map<Integer, List<Integer>> fetters = new HashMap<>();
 	private static Map<Integer, List<ShopGoodsData>> shopGoods = new HashMap<>();
 	private static final IntList scenePointIdList = new IntArrayList();
-	
-	public static char EJWOA = 's';
 	
 	public static Int2ObjectMap<?> getMapByResourceDef(Class<?> resourceDefinition) {
 		Int2ObjectMap<?> map = null;
@@ -97,6 +103,10 @@ public class GameData {
 	
 	public static Map<String, AbilityEmbryoEntry> getAbilityEmbryoInfo() {
 		return abilityEmbryos;
+	}
+
+	public static Map<String, AbilityModifierEntry> getAbilityModifiers() {
+		return abilityModifiers;
 	}
 
 	public static Map<String, OpenConfigEntry> getOpenConfigEntries() {
@@ -300,7 +310,25 @@ public class GameData {
 		return shopGoods;
 	}
 
+	public static Int2ObjectMap<RewardPreviewData> getRewardPreviewDataMap() {
+		return rewardPreviewDataMap;
+	}
+
 	public static IntList getScenePointIdList() {
 		return scenePointIdList;
+	}
+
+	public static Int2ObjectMap<CombineData> getCombineDataMap() {
+		return combineDataMap;
+	}
+
+	public static Int2ObjectMap<TowerFloorData> getTowerFloorDataMap(){
+		return towerFloorDataMap;
+	}
+	public static Int2ObjectMap<TowerLevelData> getTowerLevelDataMap(){
+		return towerLevelDataMap;
+	}
+	public static Int2ObjectMap<TowerScheduleData> getTowerScheduleDataMap(){
+		return towerScheduleDataMap;
 	}
 }
